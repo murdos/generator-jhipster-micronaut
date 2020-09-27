@@ -1,0 +1,32 @@
+package <%=packageName%>.gateway;
+
+import io.micronaut.core.async.publisher.Publishers;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.MutableHttpRequest;
+import io.micronaut.http.MutableHttpResponse;
+import io.micronaut.http.annotation.Filter;
+import io.micronaut.http.client.ProxyHttpClient;
+import io.micronaut.http.client.annotation.Client;
+import io.micronaut.http.filter.OncePerRequestHttpServerFilter;
+import io.micronaut.http.filter.ServerFilterChain;
+import org.reactivestreams.Publisher;
+
+@Filter("/services/**")
+public class ProxyFilter extends OncePerRequestHttpServerFilter {
+    @Client("crm")
+    private final ProxyHttpClient client;
+
+    public ProxyFilter(@Client("crm") ProxyHttpClient client) {
+        this.client = client;
+    }
+
+    @Override
+    protected Publisher<MutableHttpResponse<?>> doFilterOnce(HttpRequest<?> request, ServerFilterChain chain) {
+        MutableHttpRequest<?> mutableHttpRequest = request.mutate()
+            .uri(uriBuilder -> uriBuilder
+                .scheme(null)
+                .host(null)
+                .replacePath(request.getPath().replace("/services/crm", "")));
+        return client.proxy(mutableHttpRequest);
+    }
+}

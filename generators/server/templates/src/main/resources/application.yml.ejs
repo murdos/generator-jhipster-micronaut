@@ -40,6 +40,9 @@ micronaut:
         enabled: true
   security:
     enabled: true
+    token:
+      propagation:
+        enabled: true
     basic-auth:
       enabled: false
 <%_ if (authenticationType === 'jwt') { _%>

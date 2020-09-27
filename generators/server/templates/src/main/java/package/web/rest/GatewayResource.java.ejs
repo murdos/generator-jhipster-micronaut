@@ -1,0 +1,69 @@
+package <%=packageName%>.web.rest;
+
+import <%=packageName%>.security.AuthoritiesConstants;
+import <%=packageName%>.web.rest.vm.RouteVM;
+import <%=packageName%>.web.rest.vm.ServiceInstanceVM;
+import io.micronaut.discovery.DiscoveryClient;
+import io.micronaut.discovery.ServiceInstance;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.security.annotation.Secured;
+import io.reactivex.Flowable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * REST controller for managing Gateway configuration.
+ */
+@Controller("/api")
+public class GatewayResource {
+
+    private final DiscoveryClient discoveryClient;
+
+    public GatewayResource(DiscoveryClient discoveryClient) {
+        this.discoveryClient = discoveryClient;
+    }
+
+    /**
+     * {@code GET  /routes} : get the active routes.
+     *
+     * @return the {@link HttpResponse} with status {@code 200 (OK)} and with body the list of routes.
+     */
+    @Get("/gateway/routes")
+    @Secured(AuthoritiesConstants.ADMIN)
+    public List<RouteVM> activeRoutes() {
+        List<RouteVM> routes = new ArrayList<>();
+        Flowable.fromPublisher(discoveryClient.getServiceIds())
+            .flatMap(Flowable::fromIterable)
+            .map(serviceId -> {
+                RouteVM routeVM = new RouteVM();
+//                routeVM.setPath(route.getFullPath());
+//                routeVM.setServiceId(serviceId);
+                List<ServiceInstanceVM> serviceInstances = new ArrayList<>();
+                routeVM.setServiceInstances(serviceInstances);
+                    Flowable.fromPublisher(discoveryClient.getInstances(serviceId))
+                    .flatMap(Flowable::fromIterable)
+                    .map(instance -> buildServiceInstanceVM(serviceId, instance))
+                    .blockingSubscribe(serviceInstances::add);
+                return routeVM;
+            })
+            .blockingSubscribe(routes::add);
+
+        return routes;
+    }
+
+    private ServiceInstanceVM buildServiceInstanceVM(String serviceId, ServiceInstance instance) {
+        ServiceInstanceVM serviceInstance = new ServiceInstanceVM();
+        serviceInstance.setServiceId(serviceId);
+        serviceInstance.setInstanceId(instance.getId());
+        serviceInstance.setSecure(instance.isSecure());
+        serviceInstance.setUri(instance.getURI());
+//                        serviceInstance.setScheme(instance.get());
+        serviceInstance.setHost(instance.getHost());
+        serviceInstance.setPort(instance.getPort());
+        serviceInstance.setMetadata(instance.getMetadata().asMap());
+        return serviceInstance;
+    }
+}

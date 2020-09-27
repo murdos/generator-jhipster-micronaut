@@ -33,6 +33,10 @@ function askForApplicationType(meta) {
             value: DEFAULT_APPTYPE,
             name: 'Monolithic application (recommended for simple projects)',
         },
+        {
+            value: 'gateway',
+            name: 'Microservice gateway',
+        },
     ];
 
     const PROMPT = {
