@@ -131,7 +131,6 @@ public abstract class <%= entityClass %>Repository implements <% if (databaseTyp
         this.entityManager = entityManager;
     }
 
-    @Transactional
     public <%= entityClass %> mergeAndSave(<%= entityClass %> <%= entityInstance %>) {
         <%= entityInstance %> = entityManager.merge(<%= entityInstance %>);
         return save(<%= entityInstance %>);
